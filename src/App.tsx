@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import PredictionPractice from './PredictionPractice';
+import ScopeMap from './ScopeMap';
 import './prediction.css';
 import type { CSSProperties } from 'react';
 import { cards, quizzes, reactions, substances } from './data';
 import type { Card, Ion, Quiz, Reaction } from './data';
 
-type Screen = 'home' | 'reactions' | 'encyclopedia' | 'cards' | 'quiz';
+type Screen = 'home' | 'map' | 'reactions' | 'encyclopedia' | 'cards' | 'quiz';
 type Rating = 'again' | 'hard' | 'good';
 type LearningRecord = { rating: Rating; due: number; reviewedAt: number };
 type StoredProgress = { cards: Record<string, LearningRecord>; quizBest: number | null; quizAttempts: number };
@@ -57,6 +58,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
 
 const navigation: { id: Screen; label: string; icon: string; short: string }[] = [
   { id: 'home', label: 'ホーム', icon: '⌂', short: 'ホーム' },
+  { id: 'map', label: '全体マップ', icon: '▥', short: 'マップ' },
   { id: 'reactions', label: '反応ライブラリ', icon: '◉', short: '反応' },
   { id: 'encyclopedia', label: '物質図鑑', icon: '▦', short: '図鑑' },
   { id: 'cards', label: '暗記カード', icon: '▤', short: '暗記' },
@@ -357,14 +359,15 @@ export default function App() {
   function rateCard(id: string, rating: Rating) { const days = rating === 'again' ? 1 : rating === 'hard' ? 3 : 7; setProgress((old) => ({ ...old, cards: { ...old.cards, [id]: { rating, due: Date.now() + days * DAY, reviewedAt: Date.now() } } })); }
   function completeQuiz(score: number) { setProgress((old) => ({ ...old, quizBest: Math.max(old.quizBest ?? 0, score), quizAttempts: old.quizAttempts + 1 })); }
   const pageTitle = useMemo(() => navigation.find((n) => n.id === screen)?.label ?? '', [screen]);
-  return <div className="app-shell"><aside className="sidebar"><Brand/><div className="sidebar-divider"/><div className="sidebar-label">NAVIGATION</div><nav className="side-nav" aria-label="メインナビゲーション">{navigation.map((item) => <button key={item.id} type="button" onClick={() => navigate(item.id)} className={`nav-link ${screen === item.id ? 'active' : ''}`} aria-current={screen === item.id ? 'page' : undefined}><span className="nav-icon" aria-hidden="true">{item.icon}</span><span>{item.label}</span>{screen === item.id && <span className="nav-indicator"/>}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-note"><span className="status-dot"/>CHEMVISION / v0.2</div><p>無機化学・沈殿反応を<br/>少しずつ理解しよう。</p></div></aside>
-    <div className="main-column"><header className="topbar"><div className="topbar-mobile-brand"><Brand compact/><strong>ChemVision</strong></div><div className="topbar-breadcrumb">CHEMVISION <span>/</span> {pageTitle}</div><div className="topbar-status"><span className="status-dot"/> 学習モード <span className="topbar-v">v0.2</span></div></header><main className="main-content">
+  return <div className="app-shell"><aside className="sidebar"><Brand/><div className="sidebar-divider"/><div className="sidebar-label">NAVIGATION</div><nav className="side-nav" aria-label="メインナビゲーション">{navigation.map((item) => <button key={item.id} type="button" onClick={() => navigate(item.id)} className={`nav-link ${screen === item.id ? 'active' : ''}`} aria-current={screen === item.id ? 'page' : undefined}><span className="nav-icon" aria-hidden="true">{item.icon}</span><span>{item.label}</span>{screen === item.id && <span className="nav-indicator"/>}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-note"><span className="status-dot"/>CHEMVISION / v0.3</div><p>無機化学・沈殿反応を<br/>少しずつ理解しよう。</p></div></aside>
+    <div className="main-column"><header className="topbar"><div className="topbar-mobile-brand"><Brand compact/><strong>ChemVision</strong></div><div className="topbar-breadcrumb">CHEMVISION <span>/</span> {pageTitle}</div><div className="topbar-status"><span className="status-dot"/> 学習モード <span className="topbar-v">v0.3</span></div></header><main className="main-content">
       {screen === 'home' && <Home progress={progress} goTo={navigate} openReaction={openReaction}/>}
+      {screen === 'map' && <ScopeMap openReaction={openReaction}/>}
       {screen === 'reactions' && <ReactionsView activeReaction={selectedReaction} openSubstance={openSubstance} goToCards={openCards}/>}
       {screen === 'encyclopedia' && <Library openSubstance={selectedSubstance} openReaction={openReaction}/>}
       {screen === 'cards' && <Flashcards progress={progress} onRate={rateCard} initialReaction={selectedCardReaction} openReaction={openReaction}/>}
       {screen === 'quiz' && <QuizPage onComplete={completeQuiz} openReaction={openReaction}/>}
-    </main><footer className="footer">ChemVision v0.2 <span>·</span> 化学の粒子表現は教育用の模式図です。</footer></div>
+    </main><footer className="footer">ChemVision v0.3 <span>·</span> 化学の粒子表現は教育用の模式図です。</footer></div>
     <nav className="mobile-nav" aria-label="モバイルナビゲーション">{navigation.map((item) => <button key={item.id} type="button" onClick={() => navigate(item.id)} className={screen === item.id ? 'active' : ''} aria-current={screen === item.id ? 'page' : undefined}><span aria-hidden="true">{item.icon}</span><small>{item.short}</small></button>)}</nav>
   </div>;
 }
