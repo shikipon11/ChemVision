@@ -20,7 +20,7 @@ function load(name) {
   return exports;
 }
 // TSX を含む、変更対象ファイルの構文診断。型検査・ビルドは tsc / Vite が担当。
-for (const name of ['App.tsx','ScopeMap.tsx','ReactionNotebook.tsx','PredictionPractice.tsx','expandedData.ts','data.ts','scopeData.ts','main.tsx']) {
+for (const name of ['App.tsx','ScopeMap.tsx','ReactionNotebook.tsx','GasLab.tsx','gasData.ts','PredictionPractice.tsx','expandedData.ts','data.ts','scopeData.ts','main.tsx']) {
   const file = path.join(source,name);
   const o = ts.transpileModule(fs.readFileSync(file,'utf8'), {fileName:file,reportDiagnostics:true,compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}});
   const errors = (o.diagnostics || []).filter(d => d.category === ts.DiagnosticCategory.Error);
@@ -41,6 +41,17 @@ const noteIds = unique(reactionNotes, '反応ノート');
 unique(cards, '暗記カード'); unique(quizzes, '確認問題');
 const lessonIds = unique(scopeChapters.flatMap(unit => unit.lessons), '学習テーマ');
 const broken = [];
+const { gasReactions, gasChoices } = load('gasData');
+unique(gasReactions, '気体の生成アニメーション');
+if (gasChoices.length !== 4 || new Set(gasChoices).size !== 4) fail('気体クイズの選択肢設定');
+for (const gas of gasReactions) {
+  if (!lessonIds.has(gas.lessonId)) broken.push(`気体反応 ${gas.id} → テーマ ${gas.lessonId}`);
+  if (!gasChoices.includes(gas.gas.formula)) broken.push(`気体反応 ${gas.id}: 選択肢に正解がない`);
+  if (gas.stages.length !== 3 || gas.stages.some(stage => !stage.trim())) broken.push(`気体反応 ${gas.id}: 段階説明の不備`);
+  if (gas.noteId && !noteIds.has(gas.noteId)) broken.push(`気体反応 ${gas.id} → ノート ${gas.noteId}`);
+  for (const id of gas.substanceIds) if (!subIds.has(id)) broken.push(`気体反応 ${gas.id} → 物質 ${id}`);
+}
+
 for (const r of reactions) for (const id of r.substanceIds) if (!subIds.has(id)) broken.push(`反応 ${r.id} → 物質 ${id}`);
 for (const s of substances) for (const id of s.reactionIds) if (!reactionIds.has(id)) broken.push(`物質 ${s.id} → 反応 ${id}`);
 for (const note of reactionNotes) {
@@ -94,11 +105,17 @@ function sideCounts(side) {
   }
   return counts;
 }
+for (const gas of gasReactions) {
+  const arrow = gas.equation.match(/ → /);
+  if (!arrow) fail(`気体反応の矢印が不明: ${gas.id}`);
+  const [left, right] = gas.equation.split(arrow[0]);
+  if (JSON.stringify(Object.entries(sideCounts(left)).sort()) !== JSON.stringify(Object.entries(sideCounts(right)).sort())) fail(`気体反応の原子数が不一致: ${gas.id} ${gas.equation}`);
+}
 for (const note of reactionNotes) {
   const arrow = note.equation.match(/ → | ⇄ /);
   if (!arrow) fail(`矢印が不明: ${note.id}`);
   const [left, right] = note.equation.split(arrow[0]);
   if (JSON.stringify(Object.entries(sideCounts(left)).sort()) !== JSON.stringify(Object.entries(sideCounts(right)).sort())) fail(`原子数が不一致: ${note.id} ${note.equation}`);
 }
-console.log(`教材検証 OK: 物質 ${substances.length} (追加 ${extraSubstances.length}), アニメーション ${reactions.length}, 反応ノート ${reactionNotes.length}, 暗記カード ${cards.length} (追加 ${extraCards.length}), 確認問題 ${quizzes.length} (追加 ${extraQuizzes.length}), 学習テーマ ${lessonIds.size}`);
+console.log(`教材検証 OK: 物質 ${substances.length} (追加 ${extraSubstances.length}), アニメーション ${reactions.length}, 反応ノート ${reactionNotes.length}, 暗記カード ${cards.length} (追加 ${extraCards.length}), 確認問題 ${quizzes.length} (追加 ${extraQuizzes.length}), 学習テーマ ${lessonIds.size}, 気体の生成 ${gasReactions.length}`);
 console.log('ID・参照・4択設定・反応ノート原子数チェック OK（物性・条件の正しさは別途確認が必要）');
