@@ -2,13 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import PredictionPractice from './PredictionPractice';
 import ScopeMap from './ScopeMap';
 import ReactionNotebook from './ReactionNotebook';
+import GasLab from './GasLab';
+import packageInfo from '../package.json';
 import { reactionNotes } from './expandedData';
 import './prediction.css';
 import type { CSSProperties } from 'react';
 import { cards, quizzes, reactions, substances } from './data';
 import type { Card, Ion, Quiz, Reaction } from './data';
 
-type Screen = 'home' | 'map' | 'reactions' | 'notes' | 'encyclopedia' | 'cards' | 'quiz';
+type Screen = 'home' | 'map' | 'reactions' | 'gas' | 'notes' | 'encyclopedia' | 'cards' | 'quiz';
+const appVersion = packageInfo.version;
 type Rating = 'again' | 'hard' | 'good';
 type LearningRecord = { rating: Rating; due: number; reviewedAt: number };
 type StoredProgress = { cards: Record<string, LearningRecord>; quizBest: number | null; quizAttempts: number };
@@ -61,7 +64,8 @@ function Brand({ compact = false }: { compact?: boolean }) {
 const navigation: { id: Screen; label: string; icon: string; short: string }[] = [
   { id: 'home', label: 'ホーム', icon: '⌂', short: 'ホーム' },
   { id: 'map', label: '全体マップ', icon: '▥', short: 'マップ' },
-  { id: 'reactions', label: '反応ライブラリ', icon: '◉', short: '反応' },
+  { id: 'reactions', label: '沈殿反応', icon: '◉', short: '沈殿' },
+  { id: 'gas', label: '気体の生成', icon: '◌', short: '気体' },
   { id: 'notes', label: '反応ノート', icon: '≋', short: 'ノート' },
   { id: 'encyclopedia', label: '物質図鑑', icon: '▦', short: '図鑑' },
   { id: 'cards', label: '暗記カード', icon: '▤', short: '暗記' },
@@ -319,13 +323,13 @@ function Home({ progress, goTo, openReaction }: { progress: StoredProgress; goTo
   const reviewed = cards.filter((card) => progress.cards[card.id]).length;
   const due = cards.filter((card) => !progress.cards[card.id] || progress.cards[card.id].due <= Date.now()).length;
   return <section className="home-view">
-    <div className="eyebrow">WELCOME TO CHEMVISION / 0.2</div>
-    <div className="hero"><div className="hero-copy"><Badge>無機化学・沈殿反応編</Badge><h1>化学は、<br /><em>見えると変わる。</em></h1><p>目に見えないイオンの動きを、目に見える理解へ。反応を観察し、物質を調べ、思い出して覚えよう。</p><button type="button" className="primary-button hero-button" onClick={() => openReaction('agcl')}>反応を見てみる <SmallArrow /></button></div>
+    <div className="eyebrow">WELCOME TO CHEMVISION / {appVersion}</div>
+    <div className="hero"><div className="hero-copy"><Badge>無機化学・反応を見て理解する</Badge><h1>化学は、<br /><em>見えると変わる。</em></h1><p>イオンの動きも気体の生成も、画面上の模式図で理解。反応を予想し、物質を調べ、思い出して覚えよう。</p><button type="button" className="primary-button hero-button" onClick={() => openReaction('agcl')}>反応を見てみる <SmallArrow /></button></div>
       <div className="hero-art" aria-hidden="true"><div className="hero-orbit hero-orbit-one"/><div className="hero-orbit hero-orbit-two"/><div className="hero-atom hero-atom-one">Ag⁺</div><div className="hero-atom hero-atom-two">Cl⁻</div><div className="hero-atom hero-atom-three">Na⁺</div><div className="hero-center">AgCl<small>↓</small></div><span className="hero-art-label">PARTICLE MODEL / 01</span></div></div>
     <div className="dashboard-heading"><div><div className="eyebrow">LEARNING OVERVIEW</div><h2>今日の学習</h2></div><span className="text-muted small">学習状況はこの端末に保存</span></div>
     <div className="stats"><button className="stat-card" type="button" onClick={() => goTo('cards')}><span>復習できるカード</span><strong>{due}<small> / {cards.length}</small></strong><span className="stat-caption">カードを開く ↗</span></button><button className="stat-card" type="button" onClick={() => goTo('cards')}><span>学習したカード</span><strong>{reviewed}<small> / {cards.length}</small></strong><span className="stat-caption">うち「覚えた」{learned}枚</span></button><button className="stat-card" type="button" onClick={() => goTo('quiz')}><span>確認問題の最高記録</span><strong>{progress.quizBest === null ? '—' : progress.quizBest}<small> / {quizzes.length}</small></strong><span className="stat-caption">{progress.quizAttempts}回挑戦</span></button></div>
     <div className="dashboard-heading second-heading"><div><div className="eyebrow">EXPLORE</div><h2>学習を始める</h2></div></div>
-    <div className="feature-grid"><button className="feature-card feature-reaction" type="button" onClick={() => goTo('reactions')}><span className="feature-icon">◉</span><strong>反応ライブラリ</strong><p>イオンが結晶を作る様子を、段階的にアニメーションで確認。</p><span>5種類の反応を収録 <SmallArrow /></span></button><button className="feature-card feature-dictionary" type="button" onClick={() => goTo('encyclopedia')}><span className="feature-icon">▦</span><strong>物質図鑑</strong><p>化学式・色・性質を関連づけて検索。反応にも移動できる。</p><span>{substances.length}種類の物質を収録 <SmallArrow /></span></button><button className="feature-card feature-memory" type="button" onClick={() => goTo('cards')}><span className="feature-icon">▤</span><strong>暗記カード</strong><p>覚えているか確認しよう。理解度に合わせて復習日を設定。</p><span>{cards.length}枚の暗記カード <SmallArrow /></span></button></div>
+    <div className="feature-grid"><button className="feature-card feature-reaction" type="button" onClick={() => goTo('reactions')}><span className="feature-icon">◉</span><strong>反応ライブラリ</strong><p>イオンが結晶を作る様子を、段階的にアニメーションで確認。</p><span>{reactions.length}種類の反応を収録 <SmallArrow /></span></button><button className="feature-card feature-reaction" type="button" onClick={() => goTo('gas')}><span className="feature-icon">◌</span><strong>気体の生成</strong><p>生成する気体を予想してから、分子の模式図を見よう。</p><span>6種類の反応を収録 <SmallArrow /></span></button><button className="feature-card feature-dictionary" type="button" onClick={() => goTo('encyclopedia')}><span className="feature-icon">▦</span><strong>物質図鑑</strong><p>化学式・色・性質を関連づけて検索。反応にも移動できる。</p><span>{substances.length}種類の物質を収録 <SmallArrow /></span></button><button className="feature-card feature-memory" type="button" onClick={() => goTo('cards')}><span className="feature-icon">▤</span><strong>暗記カード</strong><p>覚えているか確認しよう。理解度に合わせて復習日を設定。</p><span>{cards.length}枚の暗記カード <SmallArrow /></span></button></div>
     <div className="dashboard-heading second-heading"><div><div className="eyebrow">START HERE</div><h2>最初に見てほしい反応</h2></div><button className="text-button" type="button" onClick={() => goTo('reactions')}>すべて見る →</button></div>
     <div className="reaction-preview-grid">{reactions.slice(0, 3).map((r, i) => <button type="button" className="reaction-preview" key={r.id} onClick={() => openReaction(r.id)}><span className="preview-index">0{i + 1} / PRECIPITATION</span><span className="preview-crystal" style={{ '--crystal-color': r.product.color } as CSSProperties}><span /><span /><span /><span /></span><strong>{r.name}</strong><span className="preview-equation">{r.ionicEquation}</span><SmallArrow /></button>)}</div>
   </section>;
@@ -364,16 +368,17 @@ export default function App() {
   function rateCard(id: string, rating: Rating) { const days = rating === 'again' ? 1 : rating === 'hard' ? 3 : 7; setProgress((old) => ({ ...old, cards: { ...old.cards, [id]: { rating, due: Date.now() + days * DAY, reviewedAt: Date.now() } } })); }
   function completeQuiz(score: number) { setProgress((old) => ({ ...old, quizBest: Math.max(old.quizBest ?? 0, score), quizAttempts: old.quizAttempts + 1 })); }
   const pageTitle = useMemo(() => navigation.find((n) => n.id === screen)?.label ?? '', [screen]);
-  return <div className="app-shell"><aside className="sidebar"><Brand/><div className="sidebar-divider"/><div className="sidebar-label">NAVIGATION</div><nav className="side-nav" aria-label="メインナビゲーション">{navigation.map((item) => <button key={item.id} type="button" onClick={() => navigate(item.id)} className={`nav-link ${screen === item.id ? 'active' : ''}`} aria-current={screen === item.id ? 'page' : undefined}><span className="nav-icon" aria-hidden="true">{item.icon}</span><span>{item.label}</span>{screen === item.id && <span className="nav-indicator"/>}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-note"><span className="status-dot"/>CHEMVISION / v0.4</div><p>無機化学・沈殿反応を<br/>少しずつ理解しよう。</p></div></aside>
-    <div className="main-column"><header className="topbar"><div className="topbar-mobile-brand"><Brand compact/><strong>ChemVision</strong></div><div className="topbar-breadcrumb">CHEMVISION <span>/</span> {pageTitle}</div><div className="topbar-status"><span className="status-dot"/> 学習モード <span className="topbar-v">v0.4</span></div></header><main className="main-content">
+  return <div className="app-shell"><aside className="sidebar"><Brand/><div className="sidebar-divider"/><div className="sidebar-label">NAVIGATION</div><nav className="side-nav" aria-label="メインナビゲーション">{navigation.map((item) => <button key={item.id} type="button" onClick={() => navigate(item.id)} className={`nav-link ${screen === item.id ? 'active' : ''}`} aria-current={screen === item.id ? 'page' : undefined}><span className="nav-icon" aria-hidden="true">{item.icon}</span><span>{item.label}</span>{screen === item.id && <span className="nav-indicator"/>}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-note"><span className="status-dot"/>CHEMVISION / v{appVersion}</div><p>沈殿反応・気体の生成を<br/>模式図で理解しよう。</p></div></aside>
+    <div className="main-column"><header className="topbar"><div className="topbar-mobile-brand"><Brand compact/><strong>ChemVision</strong></div><div className="topbar-breadcrumb">CHEMVISION <span>/</span> {pageTitle}</div><div className="topbar-status"><span className="status-dot"/> 学習モード <span className="topbar-v">v{appVersion}</span></div></header><main className="main-content">
       {screen === 'home' && <Home progress={progress} goTo={navigate} openReaction={openReaction}/>}
-      {screen === 'map' && <ScopeMap openReaction={openReaction} openNote={openNote}/>}
+      {screen === 'map' && <ScopeMap openReaction={openReaction} openNote={openNote} openGas={() => navigate('gas')}/>}
+      {screen === 'gas' && <GasLab openSubstance={openSubstance} openNote={openNote}/>}
       {screen === 'reactions' && <ReactionsView activeReaction={selectedReaction} openSubstance={openSubstance} goToCards={openCards}/>}
       {screen === 'notes' && <ReactionNotebook selectedNote={selectedNote} openSubstance={openSubstance}/>}
       {screen === 'encyclopedia' && <Library openSubstance={selectedSubstance} openReaction={openReaction} openNote={openNote}/>}
       {screen === 'cards' && <Flashcards progress={progress} onRate={rateCard} initialReaction={selectedCardReaction} openReaction={openReaction}/>}
       {screen === 'quiz' && <QuizPage onComplete={completeQuiz} openReaction={openReaction}/>}
-    </main><footer className="footer">ChemVision v0.4 <span>·</span> 化学の粒子表現は教育用の模式図です。</footer></div>
+    </main><footer className="footer">ChemVision v{appVersion} <span>·</span> 化学の粒子表現は教育用の模式図です。</footer></div>
     <nav className="mobile-nav" aria-label="モバイルナビゲーション">{navigation.map((item) => <button key={item.id} type="button" onClick={() => navigate(item.id)} className={screen === item.id ? 'active' : ''} aria-current={screen === item.id ? 'page' : undefined}><span aria-hidden="true">{item.icon}</span><small>{item.short}</small></button>)}</nav>
   </div>;
 }
