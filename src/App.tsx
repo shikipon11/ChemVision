@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
+import PredictionPractice from './PredictionPractice';
+import './prediction.css';
 import type { CSSProperties } from 'react';
 import { cards, quizzes, reactions, substances } from './data';
-import type { Card, Ion, Quiz, Reaction,  } from './data';
+import type { Card, Ion, Quiz, Reaction } from './data';
 
 type Screen = 'home' | 'reactions' | 'encyclopedia' | 'cards' | 'quiz';
 type Rating = 'again' | 'hard' | 'good';
@@ -147,7 +149,8 @@ function ReactionPage({ reaction, onOpenSubstance, onOpenCards }: {
   const [speed, setSpeed] = useState('normal');
   const [showSpectators, setShowSpectators] = useState(true);
   const [showAnswer, setShowAnswer] = useState(false);
-  useEffect(() => { setStep(0); setPlaying(false); setShowAnswer(false); setShowSpectators(true); }, [reaction.id]);
+  const [predictionDone, setPredictionDone] = useState(false);
+  useEffect(() => { setStep(0); setPlaying(false); setShowAnswer(false); setShowSpectators(true); setPredictionDone(false); }, [reaction.id]);
   useEffect(() => {
     if (!playing) return;
     if (step >= 2) { setPlaying(false); return; }
@@ -156,6 +159,12 @@ function ReactionPage({ reaction, onOpenSubstance, onOpenCards }: {
     return () => window.clearTimeout(timer);
   }, [playing, step, speed]);
   return <section className="reaction-detail">
+    {!predictionDone ? <>
+      <div className="section-eyebrow"><Badge>反応予測クイズ</Badge></div>
+      <h2>混合後に何が起こる？</h2>
+      <p className="text-muted intro">反応式や生成物を見る前に、観察結果を予想してみよう。</p>
+      <PredictionPractice reaction={reaction} onReveal={() => { setPredictionDone(true); setStep(0); setPlaying(true); }} />
+    </> : <>
     <div className="section-eyebrow"><Badge>沈殿反応</Badge><span className="muted">REACTION / {reactions.findIndex((r) => r.id === reaction.id) + 1 < 10 ? '0' : ''}{reactions.findIndex((r) => r.id === reaction.id) + 1}</span></div>
     <h2>{reaction.name}</h2>
     <p className="text-muted intro">{reaction.reagents[0]}と{reaction.reagents[1]}を混ぜると、どうなるだろう？</p>
@@ -196,6 +205,7 @@ function ReactionPage({ reaction, onOpenSubstance, onOpenCards }: {
     <div className="related-section"><h3>関連する物質</h3><div className="chip-row">{reaction.substanceIds.map((id) => { const sub = substances.find((s) => s.id === id); return sub && <button key={id} type="button" className="substance-chip" onClick={() => onOpenSubstance(id)}><strong>{sub.formula}</strong><span>{sub.name}</span><SmallArrow /></button>; })}</div></div>
     <button type="button" className="text-button" onClick={onOpenCards}>この反応の暗記カードを復習する →</button>
     <p className="model-note">※ このアニメーションは学習用の模式図です。イオンの実際の大きさ・数・速度、溶媒和や結晶形成の詳細を再現するものではありません。ビーカーの画像上で物質を混ぜるなどの実験操作を案内する機能はありません。</p>
+    </>}
   </section>;
 }
 
@@ -304,7 +314,7 @@ function Home({ progress, goTo, openReaction }: { progress: StoredProgress; goTo
   const reviewed = cards.filter((card) => progress.cards[card.id]).length;
   const due = cards.filter((card) => !progress.cards[card.id] || progress.cards[card.id].due <= Date.now()).length;
   return <section className="home-view">
-    <div className="eyebrow">WELCOME TO CHEMVISION / 0.1</div>
+    <div className="eyebrow">WELCOME TO CHEMVISION / 0.2</div>
     <div className="hero"><div className="hero-copy"><Badge>無機化学・沈殿反応編</Badge><h1>化学は、<br /><em>見えると変わる。</em></h1><p>目に見えないイオンの動きを、目に見える理解へ。反応を観察し、物質を調べ、思い出して覚えよう。</p><button type="button" className="primary-button hero-button" onClick={() => openReaction('agcl')}>反応を見てみる <SmallArrow /></button></div>
       <div className="hero-art" aria-hidden="true"><div className="hero-orbit hero-orbit-one"/><div className="hero-orbit hero-orbit-two"/><div className="hero-atom hero-atom-one">Ag⁺</div><div className="hero-atom hero-atom-two">Cl⁻</div><div className="hero-atom hero-atom-three">Na⁺</div><div className="hero-center">AgCl<small>↓</small></div><span className="hero-art-label">PARTICLE MODEL / 01</span></div></div>
     <div className="dashboard-heading"><div><div className="eyebrow">LEARNING OVERVIEW</div><h2>今日の学習</h2></div><span className="text-muted small">学習状況はこの端末に保存</span></div>
@@ -347,14 +357,14 @@ export default function App() {
   function rateCard(id: string, rating: Rating) { const days = rating === 'again' ? 1 : rating === 'hard' ? 3 : 7; setProgress((old) => ({ ...old, cards: { ...old.cards, [id]: { rating, due: Date.now() + days * DAY, reviewedAt: Date.now() } } })); }
   function completeQuiz(score: number) { setProgress((old) => ({ ...old, quizBest: Math.max(old.quizBest ?? 0, score), quizAttempts: old.quizAttempts + 1 })); }
   const pageTitle = useMemo(() => navigation.find((n) => n.id === screen)?.label ?? '', [screen]);
-  return <div className="app-shell"><aside className="sidebar"><Brand/><div className="sidebar-divider"/><div className="sidebar-label">NAVIGATION</div><nav className="side-nav" aria-label="メインナビゲーション">{navigation.map((item) => <button key={item.id} type="button" onClick={() => navigate(item.id)} className={`nav-link ${screen === item.id ? 'active' : ''}`} aria-current={screen === item.id ? 'page' : undefined}><span className="nav-icon" aria-hidden="true">{item.icon}</span><span>{item.label}</span>{screen === item.id && <span className="nav-indicator"/>}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-note"><span className="status-dot"/>CHEMVISION / v0.1</div><p>無機化学・沈殿反応を<br/>少しずつ理解しよう。</p></div></aside>
-    <div className="main-column"><header className="topbar"><div className="topbar-mobile-brand"><Brand compact/><strong>ChemVision</strong></div><div className="topbar-breadcrumb">CHEMVISION <span>/</span> {pageTitle}</div><div className="topbar-status"><span className="status-dot"/> 学習モード <span className="topbar-v">v0.1</span></div></header><main className="main-content">
+  return <div className="app-shell"><aside className="sidebar"><Brand/><div className="sidebar-divider"/><div className="sidebar-label">NAVIGATION</div><nav className="side-nav" aria-label="メインナビゲーション">{navigation.map((item) => <button key={item.id} type="button" onClick={() => navigate(item.id)} className={`nav-link ${screen === item.id ? 'active' : ''}`} aria-current={screen === item.id ? 'page' : undefined}><span className="nav-icon" aria-hidden="true">{item.icon}</span><span>{item.label}</span>{screen === item.id && <span className="nav-indicator"/>}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-note"><span className="status-dot"/>CHEMVISION / v0.2</div><p>無機化学・沈殿反応を<br/>少しずつ理解しよう。</p></div></aside>
+    <div className="main-column"><header className="topbar"><div className="topbar-mobile-brand"><Brand compact/><strong>ChemVision</strong></div><div className="topbar-breadcrumb">CHEMVISION <span>/</span> {pageTitle}</div><div className="topbar-status"><span className="status-dot"/> 学習モード <span className="topbar-v">v0.2</span></div></header><main className="main-content">
       {screen === 'home' && <Home progress={progress} goTo={navigate} openReaction={openReaction}/>}
       {screen === 'reactions' && <ReactionsView activeReaction={selectedReaction} openSubstance={openSubstance} goToCards={openCards}/>}
       {screen === 'encyclopedia' && <Library openSubstance={selectedSubstance} openReaction={openReaction}/>}
       {screen === 'cards' && <Flashcards progress={progress} onRate={rateCard} initialReaction={selectedCardReaction} openReaction={openReaction}/>}
       {screen === 'quiz' && <QuizPage onComplete={completeQuiz} openReaction={openReaction}/>}
-    </main><footer className="footer">ChemVision v0.1 <span>·</span> 化学の粒子表現は教育用の模式図です。</footer></div>
+    </main><footer className="footer">ChemVision v0.2 <span>·</span> 化学の粒子表現は教育用の模式図です。</footer></div>
     <nav className="mobile-nav" aria-label="モバイルナビゲーション">{navigation.map((item) => <button key={item.id} type="button" onClick={() => navigate(item.id)} className={screen === item.id ? 'active' : ''} aria-current={screen === item.id ? 'page' : undefined}><span aria-hidden="true">{item.icon}</span><small>{item.short}</small></button>)}</nav>
   </div>;
 }
