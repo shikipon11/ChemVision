@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import PredictionPractice from './PredictionPractice';
 import ScopeMap from './ScopeMap';
+import ReactionNotebook from './ReactionNotebook';
+import { reactionNotes } from './expandedData';
 import './prediction.css';
 import type { CSSProperties } from 'react';
 import { cards, quizzes, reactions, substances } from './data';
 import type { Card, Ion, Quiz, Reaction } from './data';
 
-type Screen = 'home' | 'map' | 'reactions' | 'encyclopedia' | 'cards' | 'quiz';
+type Screen = 'home' | 'map' | 'reactions' | 'notes' | 'encyclopedia' | 'cards' | 'quiz';
 type Rating = 'again' | 'hard' | 'good';
 type LearningRecord = { rating: Rating; due: number; reviewedAt: number };
 type StoredProgress = { cards: Record<string, LearningRecord>; quizBest: number | null; quizAttempts: number };
@@ -60,6 +62,7 @@ const navigation: { id: Screen; label: string; icon: string; short: string }[] =
   { id: 'home', label: 'ホーム', icon: '⌂', short: 'ホーム' },
   { id: 'map', label: '全体マップ', icon: '▥', short: 'マップ' },
   { id: 'reactions', label: '反応ライブラリ', icon: '◉', short: '反応' },
+  { id: 'notes', label: '反応ノート', icon: '≋', short: 'ノート' },
   { id: 'encyclopedia', label: '物質図鑑', icon: '▦', short: '図鑑' },
   { id: 'cards', label: '暗記カード', icon: '▤', short: '暗記' },
   { id: 'quiz', label: '確認問題', icon: '✓', short: '問題' }
@@ -211,12 +214,12 @@ function ReactionPage({ reaction, onOpenSubstance, onOpenCards }: {
   </section>;
 }
 
-function Library({ openSubstance, openReaction }: { openSubstance: string | null; openReaction: (id: string) => void }) {
+function Library({ openSubstance, openReaction, openNote }: { openSubstance: string | null; openReaction: (id: string) => void; openNote: (id: string) => void }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('すべて');
   const [chosen, setChosen] = useState<string | null>(openSubstance);
   useEffect(() => { if (openSubstance) setChosen(openSubstance); }, [openSubstance]);
-  const filters = ['すべて', '沈殿', '銀', '鉄', '銅', 'バリウム', 'カルシウム'];
+  const filters = ['すべて', '沈殿', '銀', '鉄', '銅', 'バリウム', 'カルシウム', '非金属', '気体', '錯イオン', '両性', 'ハロゲン'];
   const results = substances.filter((s) => {
     const haystack = [s.name, s.formula, s.category, s.appearance, ...s.tags].join(' ');
     const matchFilter = filter === 'すべて' || (filter === '沈殿' ? s.appearance.includes('沈殿') : haystack.includes(filter));
@@ -231,7 +234,7 @@ function Library({ openSubstance, openReaction }: { openSubstance: string | null
       <button className="text-button back-button" type="button" onClick={() => setChosen(null)}>← 図鑑の一覧に戻る</button>
       <div className="substance-hero"><div className="formula-tile">{selected.formula}</div><div><Badge tone="blue">{selected.category}</Badge><h2>{selected.name}</h2><div className="text-muted">{selected.formula}</div></div></div>
       <div className="property-grid"><div className="property"><span>外観・色</span><strong>{selected.appearance}</strong></div><div className="property"><span>溶解性</span><strong>{selected.solubility}</strong></div><div className="property full"><span>覚えるポイント</span><strong>{selected.fact}</strong></div></div>
-      <h3 className="section-subtitle">関連する反応</h3><div className="stack-list">{selected.reactionIds.map((id) => { const r = reactions.find((entry) => entry.id === id); return r && <button type="button" className="list-row" key={id} onClick={() => openReaction(id)}><span><strong>{r.name}</strong><small>{r.equation}</small></span><SmallArrow /></button>; })}</div>
+      <h3 className="section-subtitle">関連する反応</h3><div className="stack-list">{selected.reactionIds.map((id) => { const r = reactions.find((entry) => entry.id === id); return r && <button type="button" className="list-row" key={id} onClick={() => openReaction(id)}><span><strong>{r.name}</strong><small>{r.equation}</small></span><SmallArrow /></button>; })}{reactionNotes.filter(note => note.substanceIds.includes(selected.id)).map(note => <button type="button" className="list-row" key={note.id} onClick={() => openNote(note.id)}><span><strong>{note.title}（反応ノート）</strong><small>{note.equation}</small></span><SmallArrow /></button>)}</div>
     </div> : <>
       <div className="results-line">{results.length}件の物質</div>
       <div className="substance-grid">{results.map((s) => <button type="button" key={s.id} className="substance-card" onClick={() => setChosen(s.id)}><span className="formula-large">{s.formula}</span><strong>{s.name}</strong><span className="substance-tagline">{s.appearance}</span><span className="substance-link">詳しく見る ↗</span></button>)}</div>
@@ -350,24 +353,27 @@ export default function App() {
   const [selectedReaction, setSelectedReaction] = useState<string | null>(null);
   const [selectedSubstance, setSelectedSubstance] = useState<string | null>(null);
   const [selectedCardReaction, setSelectedCardReaction] = useState<string | null>(null);
+  const [selectedNote, setSelectedNote] = useState<string | null>(null);
   const [progress, setProgress] = useState<StoredProgress>(loadProgress);
   useEffect(() => { try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch { /* ブラウザで保存を許可していない場合も学習できる */ } }, [progress]);
-  function navigate(next: Screen) { setScreen(next); setSelectedReaction(null); setSelectedSubstance(null); setSelectedCardReaction(null); window.scrollTo({ top: 0, behavior: 'instant' }); }
+  function navigate(next: Screen) { setScreen(next); setSelectedReaction(null); setSelectedSubstance(null); setSelectedCardReaction(null); setSelectedNote(null); window.scrollTo({ top: 0, behavior: 'instant' }); }
+  function openNote(id: string) { setSelectedNote(id); setScreen('notes'); window.scrollTo({ top: 0, behavior: 'instant' }); }
   function openReaction(id: string) { setSelectedReaction(id); setSelectedSubstance(null); setSelectedCardReaction(null); setScreen('reactions'); window.scrollTo({ top: 0, behavior: 'instant' }); }
   function openSubstance(id: string) { setSelectedSubstance(id); setSelectedReaction(null); setSelectedCardReaction(null); setScreen('encyclopedia'); window.scrollTo({ top: 0, behavior: 'instant' }); }
   function openCards(id: string) { setSelectedCardReaction(id); setSelectedReaction(null); setScreen('cards'); window.scrollTo({ top: 0, behavior: 'instant' }); }
   function rateCard(id: string, rating: Rating) { const days = rating === 'again' ? 1 : rating === 'hard' ? 3 : 7; setProgress((old) => ({ ...old, cards: { ...old.cards, [id]: { rating, due: Date.now() + days * DAY, reviewedAt: Date.now() } } })); }
   function completeQuiz(score: number) { setProgress((old) => ({ ...old, quizBest: Math.max(old.quizBest ?? 0, score), quizAttempts: old.quizAttempts + 1 })); }
   const pageTitle = useMemo(() => navigation.find((n) => n.id === screen)?.label ?? '', [screen]);
-  return <div className="app-shell"><aside className="sidebar"><Brand/><div className="sidebar-divider"/><div className="sidebar-label">NAVIGATION</div><nav className="side-nav" aria-label="メインナビゲーション">{navigation.map((item) => <button key={item.id} type="button" onClick={() => navigate(item.id)} className={`nav-link ${screen === item.id ? 'active' : ''}`} aria-current={screen === item.id ? 'page' : undefined}><span className="nav-icon" aria-hidden="true">{item.icon}</span><span>{item.label}</span>{screen === item.id && <span className="nav-indicator"/>}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-note"><span className="status-dot"/>CHEMVISION / v0.3</div><p>無機化学・沈殿反応を<br/>少しずつ理解しよう。</p></div></aside>
-    <div className="main-column"><header className="topbar"><div className="topbar-mobile-brand"><Brand compact/><strong>ChemVision</strong></div><div className="topbar-breadcrumb">CHEMVISION <span>/</span> {pageTitle}</div><div className="topbar-status"><span className="status-dot"/> 学習モード <span className="topbar-v">v0.3</span></div></header><main className="main-content">
+  return <div className="app-shell"><aside className="sidebar"><Brand/><div className="sidebar-divider"/><div className="sidebar-label">NAVIGATION</div><nav className="side-nav" aria-label="メインナビゲーション">{navigation.map((item) => <button key={item.id} type="button" onClick={() => navigate(item.id)} className={`nav-link ${screen === item.id ? 'active' : ''}`} aria-current={screen === item.id ? 'page' : undefined}><span className="nav-icon" aria-hidden="true">{item.icon}</span><span>{item.label}</span>{screen === item.id && <span className="nav-indicator"/>}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-note"><span className="status-dot"/>CHEMVISION / v0.4</div><p>無機化学・沈殿反応を<br/>少しずつ理解しよう。</p></div></aside>
+    <div className="main-column"><header className="topbar"><div className="topbar-mobile-brand"><Brand compact/><strong>ChemVision</strong></div><div className="topbar-breadcrumb">CHEMVISION <span>/</span> {pageTitle}</div><div className="topbar-status"><span className="status-dot"/> 学習モード <span className="topbar-v">v0.4</span></div></header><main className="main-content">
       {screen === 'home' && <Home progress={progress} goTo={navigate} openReaction={openReaction}/>}
-      {screen === 'map' && <ScopeMap openReaction={openReaction}/>}
+      {screen === 'map' && <ScopeMap openReaction={openReaction} openNote={openNote}/>}
       {screen === 'reactions' && <ReactionsView activeReaction={selectedReaction} openSubstance={openSubstance} goToCards={openCards}/>}
-      {screen === 'encyclopedia' && <Library openSubstance={selectedSubstance} openReaction={openReaction}/>}
+      {screen === 'notes' && <ReactionNotebook selectedNote={selectedNote} openSubstance={openSubstance}/>}
+      {screen === 'encyclopedia' && <Library openSubstance={selectedSubstance} openReaction={openReaction} openNote={openNote}/>}
       {screen === 'cards' && <Flashcards progress={progress} onRate={rateCard} initialReaction={selectedCardReaction} openReaction={openReaction}/>}
       {screen === 'quiz' && <QuizPage onComplete={completeQuiz} openReaction={openReaction}/>}
-    </main><footer className="footer">ChemVision v0.3 <span>·</span> 化学の粒子表現は教育用の模式図です。</footer></div>
+    </main><footer className="footer">ChemVision v0.4 <span>·</span> 化学の粒子表現は教育用の模式図です。</footer></div>
     <nav className="mobile-nav" aria-label="モバイルナビゲーション">{navigation.map((item) => <button key={item.id} type="button" onClick={() => navigate(item.id)} className={screen === item.id ? 'active' : ''} aria-current={screen === item.id ? 'page' : undefined}><span aria-hidden="true">{item.icon}</span><small>{item.short}</small></button>)}</nav>
   </div>;
 }

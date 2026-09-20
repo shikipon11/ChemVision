@@ -1,3 +1,4 @@
+import { extraCards, extraQuizzes, extraSubstances } from './expandedData';
 /** 化学データは描画ロジックから独立。値と文章は教材用に手動で確認して収録する。 */
 export type Ion = {
   id: string;
@@ -149,7 +150,7 @@ export const reactions: Reaction[] = [
   }
 ];
 
-export const substances: Substance[] = [
+const baseSubstances: Substance[] = [
   { id: 'silver-nitrate', name: '硝酸銀', formula: 'AgNO₃', category: '銀の化合物', appearance: '白色の結晶。水溶液は無色。', solubility: '水に溶ける。', fact: 'Ag⁺の供給源として塩化物イオンの検出に用いる。', reactionIds: ['agcl'], tags: ['銀', '硝酸塩'] },
   { id: 'sodium-chloride', name: '塩化ナトリウム', formula: 'NaCl', category: 'ナトリウムの化合物', appearance: '白色の結晶。水溶液は無色。', solubility: '水に溶ける。', fact: '水溶液中でNa⁺とCl⁻に電離する。', reactionIds: ['agcl', 'baso4', 'feoh3', 'caco3'], tags: ['塩化物', 'ナトリウム'] },
   { id: 'silver-chloride', name: '塩化銀', formula: 'AgCl', category: '銀の化合物', appearance: '白色の沈殿。', solubility: '水に難溶。過剰のアンモニア水には溶ける。', fact: '光で徐々に分解する。Ag⁺とCl⁻によって沈殿ができる。', reactionIds: ['agcl'], tags: ['白色沈殿', '銀', '塩化物'] },
@@ -166,7 +167,7 @@ export const substances: Substance[] = [
   { id: 'calcium-carbonate', name: '炭酸カルシウム', formula: 'CaCO₃', category: 'カルシウムの化合物', appearance: '白色の沈殿・固体。', solubility: '水に難溶。', fact: '酸と反応してCO₂を発生する。石灰石の主成分。', reactionIds: ['caco3'], tags: ['白色沈殿', 'カルシウム', '炭酸塩'] }
 ];
 
-export const cards: Card[] = [
+const baseCards: Card[] = [
   { id: 'f01', prompt: '塩化銀（AgCl）の沈殿は何色？', answer: '白色', explanation: 'Ag⁺とCl⁻から白色のAgClが沈殿する。', reactionId: 'agcl' },
   { id: 'f02', prompt: 'AgClを生成するイオンを2つ答えよう。', answer: 'Ag⁺ と Cl⁻', explanation: '正味のイオン反応式は Ag⁺ + Cl⁻ → AgCl↓。', reactionId: 'agcl' },
   { id: 'f03', prompt: 'AgNO₃水溶液とNaCl水溶液を混ぜたとき、水溶液中に残る傍観イオンは？', answer: 'Na⁺ と NO₃⁻', explanation: 'Ag⁺とCl⁻が沈殿する一方、Na⁺とNO₃⁻は水溶液中に残る。', reactionId: 'agcl' },
@@ -189,7 +190,7 @@ export const cards: Card[] = [
   { id: 'f20', prompt: '沈殿反応のイオン反応式で、傍観イオンは書く？', answer: '書かない', explanation: '反応前後で変化しないイオンを省き、実際に変化する粒子を表す。', reactionId: 'agcl' }
 ];
 
-export const quizzes: Quiz[] = [
+const baseQuizzes: Quiz[] = [
   { id: 'q01', label: '色の確認', question: 'AgNO₃水溶液とNaCl水溶液を混ぜると、どんな沈殿が生じる？', options: ['白色のAgCl', '青白色のCu(OH)₂', '赤褐色のFe(OH)₃', '沈殿は生じない'], correctIndex: 0, explanation: 'Ag⁺ + Cl⁻ → AgCl↓。塩化銀は白色沈殿。', reactionId: 'agcl' },
   { id: 'q02', label: '粒子の理解', question: 'AgClが沈殿した後、主に水溶液中に残る傍観イオンの組は？', options: ['Ag⁺とCl⁻', 'Na⁺とNO₃⁻', 'Ag⁺とNO₃⁻', 'Na⁺とCl⁻'], correctIndex: 1, explanation: 'Ag⁺とCl⁻がAgClとして沈殿し、Na⁺とNO₃⁻が残る。', reactionId: 'agcl' },
   { id: 'q03', label: 'イオン反応式', question: 'BaSO₄が生成するときの正しいイオン反応式は？', options: ['Ba²⁺ + 2SO₄²⁻ → Ba(SO₄)₂', 'Ba⁺ + SO₄⁻ → BaSO₄', 'Ba²⁺ + SO₄²⁻ → BaSO₄↓', 'Ba²⁺ + 2Cl⁻ → BaCl₂↓'], correctIndex: 2, explanation: '電荷が打ち消し合う1:1の比でBaSO₄が生じる。', reactionId: 'baso4' },
@@ -203,3 +204,8 @@ export const quizzes: Quiz[] = [
   { id: 'q11', label: '反応の予測', question: 'Ba²⁺とSO₄²⁻を含む水溶液を混ぜたら、何色の沈殿ができる？', options: ['青白色', '赤褐色', '緑白色', '白色'], correctIndex: 3, explanation: 'BaSO₄は白色で、水や希酸に難溶。', reactionId: 'baso4' },
   { id: 'q12', label: '粒子の理解', question: '「傍観イオン」の説明として正しいものは？', options: ['必ず沈殿になるイオン', '反応の前後で化学的に変化せず水溶液中に残るイオン', '必ず気体になるイオン', '式の係数が0になるイオン'], correctIndex: 1, explanation: '正味のイオン反応式では、反応前後で変化しない傍観イオンを省く。', reactionId: 'agcl' }
 ];
+
+// v0.4 教材データは別モジュールで管理。既存の学習履歴IDを維持する。
+export const substances: Substance[] = [...baseSubstances, ...extraSubstances];
+export const cards: Card[] = [...baseCards, ...extraCards];
+export const quizzes: Quiz[] = [...baseQuizzes, ...extraQuizzes];
