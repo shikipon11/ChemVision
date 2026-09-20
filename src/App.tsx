@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { cards, quizzes, reactions, substances } from './data';
-import type { Card, Ion, Quiz, Reaction, Substance } from './data';
+import type { Card, Ion, Quiz, Reaction,  } from './data';
 
 type Screen = 'home' | 'reactions' | 'encyclopedia' | 'cards' | 'quiz';
 type Rating = 'again' | 'hard' | 'good';
